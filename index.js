@@ -49,7 +49,7 @@ async function run(){
         const review= req.body;
         console.log(review)
         const cursor= await reviewCollection.insertOne(review)
-        res.send(cursor)
+        res.send(review)
      })
 
     }
