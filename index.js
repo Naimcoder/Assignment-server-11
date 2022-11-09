@@ -59,6 +59,10 @@ async function run(){
         res.send(service)
      })
      app.get('/reviews',verifyjwt,async(req,res)=>{
+      const decoded= req.decoded
+      if (decoded.email !== req.query.email) {
+         req.status(403).send({massage:'unAuthorazied access'})
+      }
         let query={}
         if (req.query.email) {
          query={
