@@ -16,6 +16,24 @@ console.log(uri)
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 
+function verifyjwt(req,res,next){
+const authtoken=req.headers.authorization
+if (!authtoken) {
+  return res.status(401).sent({massage: 'unauthrizaed access'})
+}
+jwt.verify(authtoken,process.env.ACCESS_TOKEN,function(error,decoded){
+ if (error) {
+  return res.status(403).sent({massage: 'unauthrizaed access'})
+ }
+ req.decoded= decoded;
+ next()
+})
+
+}
+
+
+
+
 async function run(){
     try{
      const productsCollection= client.db('foodDb').collection('products')
@@ -40,16 +58,23 @@ async function run(){
         const service= await productsCollection.findOne(query)
         res.send(service)
      })
-     app.get('/reviews',async(req,res)=>{
-        const review= reviewCollection.find({})
+     app.get('/reviews',verifyjwt,async(req,res)=>{
+        let query={}
+        if (req.query.email) {
+         query={
+            email:req.query.email
+         }
+        
+        }
+        const review= reviewCollection.find(query)
         const result= await review.toArray()
-    
         res.send(result)
      })
       app.post('/services',(req,res)=>{
          const items= req.body;
-          
+
       })
+
      app.post('/reviews',async(req,res)=>{
         const review= req.body;
         console.log(review)
