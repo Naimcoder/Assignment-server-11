@@ -1,108 +1,130 @@
-const express= require('express')
-const cors= require('cors')
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const app= express()
-const jwt= require('jsonwebtoken');
-const port= process.env.PORT || 5000;
-require('dotenv').config()
+const express = require("express");
+const cors = require("cors");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const app = express();
+const jwt = require("jsonwebtoken");
+const port = process.env.PORT || 5000;
+require("dotenv").config();
 
 //
-app.use(cors())
-app.use(express.json())
+app.use(cors());
+app.use(express.json());
 
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.rge2daw.mongodb.net/?retryWrites=true&w=majority`;
+console.log(uri);
+const client = new MongoClient(uri, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverApi: ServerApiVersion.v1,
+});
+// // jwt verify start
+// function verifyjwt(req, res, next) {
+//   const authtoken = req.headers.authorization;
+//   if (!authtoken) {
+//     return res.send({ massage: "unauthrizaed access" });
+//   }
+//   jwt.verify(authtoken, process.env.ACCESS_TOKEN, function (error, decoded) {
+//     if (error) {
+//       return res.send({ massage: "unauthrizaed access" });
+//     }
+//     req.decoded = decoded;
+//     next();
+//   });
+// }
 
-const uri =`mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.rge2daw.mongodb.net/?retryWrites=true&w=majority`;
-console.log(uri)
-const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+// collection mongodb
+async function run() {
+  try {
+    const productsCollection = client.db("foodDb").collection("products");
+    const reviewCollection = client.db("reviewDb").collection("reviewss");
 
+   //  // jwt sign
+   //  app.post("/jwt", (req, res) => {
+   //    const user = req.body;
+   //    console.log(user);
+   //    const token = jwt.sign(user, process.env.ACCESS_TOKEN);
+   //    res.send({ token });
+   //  });
 
-function verifyjwt(req,res,next){
-const authtoken=req.headers.authorization
-if (!authtoken) {
-  return res.status(401).sent({massage: 'unauthrizaed access'})
-}
-jwt.verify(authtoken,process.env.ACCESS_TOKEN,function(error,decoded){
- if (error) {
-  return res.status(403).sent({massage: 'unauthrizaed access'})
- }
- req.decoded= decoded;
- next()
-})
+    //  3 items services
+    app.get("/services", async (req, res) => {
+      const service = productsCollection.find({});
+      const result = await service.limit(3).toArray();
+      res.send(result);
+    });
 
-}
+    // all services get
+    app.get("/servicesAll", async (req, res) => {
+      const query = {};
+      const service = productsCollection.find(query);
+      const result = await service.toArray();
+      res.send(result);
+    });
 
+    // single services get
+    app.get(`/services/:id`, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const service = await productsCollection.findOne(query);
+      res.send(service);
+    });
 
-
-
-async function run(){
-    try{
-     const productsCollection= client.db('foodDb').collection('products')
-     const reviewCollection= client.db('reviewDb').collection('reviewss')
-
-   
-
-     app.get('/services',async(req,res)=>{
-        const service= productsCollection.find({})
-        const result=await service.limit(3).toArray()
-        res.send(result)
-     })
-     app.get('/servicesAll',async(req,res)=>{
-        const query= {}
-        const service= productsCollection.find(query)
-        const result= await service.toArray()
-        res.send(result)
-     })
-     app.get(`/services/:id`,async(req,res)=>{
-        const id= req.params.id;
-        const query={_id:ObjectId(id)}
-        const service= await productsCollection.findOne(query)
-        res.send(service)
-     })
-     app.get('/reviews',verifyjwt,async(req,res)=>{
-      const decoded= req.decoded
-      if (decoded.email !== req.query.email) {
-         req.status(403).send({massage:'unAuthorazied access'})
+    // get reviews all
+    app.get("/reviews", async (req, res) => {
+      let query = {};
+      if (req.query.email) {
+        query = {
+          email: req.query.email,
+        };
       }
-        let query={}
-        if (req.query.email) {
-         query={
-            email:req.query.email
-         }
-        
-        }
-        const review= reviewCollection.find(query)
-        const result= await review.toArray()
-        res.send(result)
-     })
-      app.post('/services',(req,res)=>{
-         const items= req.body;
+      const review = reviewCollection.find(query).sort({ time: -1 });
+      const result = await review.toArray();
+      res.send(result);
+    });
 
-      })
+    // addServices post
+    app.post("/services", (req, res) => {
+      const items = req.body;
+    });
 
-     app.post('/reviews',async(req,res)=>{
-        const review= req.body;
-        console.log(review)
-        const cursor= await reviewCollection.insertOne(review)
-        res.send(review)
-     })
-     app.post('/jwt',(req,res)=>{
-      const user= req.body
-      console.log(user)
-      const token= jwt.sign(user,process.env.ACCESS_TOKEN)
-      res.send({token})
-      })
-    }
-    finally{
+    // my reviews post
+    app.post("/reviews", async (req, res) => {
+      const review = req.body;
+      console.log(review);
+      const cursor = await reviewCollection.insertOne(review);
+      res.send(cursor);
+    });
 
-    }
-}run().catch(error=>console.log(error))
-
-
-app.get('/',(req,res)=>{
-    res.send('My Server running')
-})
+   //  app.patch("/orders/:id", async (req, res) => {
+   //    const id = req.params.id;
+   //    const status = req.body.status;
+   //    const fillter = { _id: ObjectId(id) };
+   //    const options = { upsert: true };
+   //    const updateDoc = {
+   //      $set: {
+   //        status: status,
+   //      },
+   //    };
+   //    const result = await orderCollection.updateOne(
+   //      fillter,
+   //      updateDoc,
+   //      options
+   //    );
+   //    res.send(result);
+   //  });
 
 
-app.listen(port,()=>{
-    console.log(`my server Running${port}`)
-})
+
+
+  } finally {
+  }
+}
+run().catch((error) => console.log(error));
+
+app.get("/", (req, res) => {
+  res.send("My Server running");
+});
+
+app.listen(port, () => {
+  console.log(`my server Running${port}`);
+});
