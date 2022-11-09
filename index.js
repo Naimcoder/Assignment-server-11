@@ -21,6 +21,8 @@ async function run(){
      const productsCollection= client.db('foodDb').collection('products')
      const reviewCollection= client.db('reviewDb').collection('reviewss')
 
+   
+
      app.get('/services',async(req,res)=>{
         const service= productsCollection.find({})
         const result=await service.limit(3).toArray()
@@ -54,7 +56,12 @@ async function run(){
         const cursor= await reviewCollection.insertOne(review)
         res.send(review)
      })
-
+     app.post('/jwt',(req,res)=>{
+      const user= req.body
+      console.log(user)
+      const token= jwt.sign(user,process.env.ACCESS_TOKEN)
+      res.send({token})
+      })
     }
     finally{
 
