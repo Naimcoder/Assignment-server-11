@@ -34,7 +34,6 @@ async function run(){
      })
      app.get(`/services/:id`,async(req,res)=>{
         const id= req.params.id;
-        console.log(id)
         const query={_id:ObjectId(id)}
         const service= await productsCollection.findOne(query)
         res.send(service)
@@ -42,9 +41,13 @@ async function run(){
      app.get('/reviews',async(req,res)=>{
         const review= reviewCollection.find({})
         const result= await review.toArray()
+    
         res.send(result)
      })
-
+      app.post('/services',(req,res)=>{
+         const items= req.body;
+          
+      })
      app.post('/reviews',async(req,res)=>{
         const review= req.body;
         console.log(review)
